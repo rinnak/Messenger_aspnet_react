@@ -1,0 +1,8 @@
+bin/
+obj/
+.idea/
+*.sln.DotSettings.user
+.local/
+.DS_Store
+
+/src/Messenger.Web/appsettings.Development.json

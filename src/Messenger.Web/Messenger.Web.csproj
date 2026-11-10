@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>Messenger.Web-ae4222c8-5844-4aef-a43b-6771ac8153fa</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Messenger.Application\Messenger.Application.csproj" />
+    <ProjectReference Include="..\Messenger.Infrastructure\Messenger.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
