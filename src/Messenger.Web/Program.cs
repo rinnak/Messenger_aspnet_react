@@ -2,6 +2,7 @@ using Messenger.Application.Accounts;
 using Messenger.Infrastructure.Accounts;
 using Messenger.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +18,22 @@ builder.Services.AddIdentityCore<MessengerUser>(options =>
         options.Password.RequireUppercase = true;
         options.Password.RequireNonAlphanumeric = false;
     })
-    .AddEntityFrameworkStores<MessengerDbContext>();
+    .AddEntityFrameworkStores<MessengerDbContext>()
+    .AddSignInManager();
 
+builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddIdentityCookies();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "Messenger.Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.SlidingExpiration = false;
+});
+builder.Services.AddAuthorization();
 builder.Services.AddScoped<IAccountStore, IdentityAccountStore>();
 builder.Services.AddScoped<RegisterAccount>();
 builder.Services.AddControllers();
@@ -31,10 +46,16 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 
 app.UseHttpsRedirection();
+app.UseAuthentication(); //читаем куки входа для опр текущ польз
+app.UseAuthorization(); //может ли опр польз вызв выбр маршрут (если сессия истекла)
 
 app.MapGet("/", () => Results.Ok(new { service = "Messenger" }));
 app.MapControllers();
