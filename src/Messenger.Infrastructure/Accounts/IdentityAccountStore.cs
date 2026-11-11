@@ -49,6 +49,6 @@ public sealed class IdentityAccountStore(UserManager<MessengerUser> userManager)
             return null;
         }
         
-        return new AccountProfile(user.Id, user.UserName, user.DisplayName);
+        return new AccountProfile(user.Id, user.UserName!, user.DisplayName);
     }
 }

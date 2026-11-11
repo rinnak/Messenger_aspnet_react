@@ -14,6 +14,7 @@ public interface IAccountStore
 
 public sealed class RegisterAccount(IAccountStore accounts)
 {
+    
     public Task<RegistrationResult> RegisterAsync(RegistrationRequest request)
     {
         var username = request.Username ?? "";

@@ -3,12 +3,16 @@ using Messenger.Infrastructure.Accounts;
 using Messenger.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Messenger.Application.Chats;
+using Messenger.Infrastructure.Chats;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("Messenger")
     ?? throw new InvalidOperationException("Configure ConnectionStrings:Messenger for PostgreSQL.");
 
+builder.Services.AddScoped<IDirectChatStore, DirectChatStore>();
+builder.Services.AddScoped<OpenDirectChat>();
 builder.Services.AddDbContext<MessengerDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddIdentityCore<MessengerUser>(options =>
     {
