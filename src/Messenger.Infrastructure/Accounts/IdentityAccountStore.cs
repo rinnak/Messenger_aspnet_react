@@ -39,4 +39,16 @@ public sealed class IdentityAccountStore(UserManager<MessengerUser> userManager)
             //cлучай с параллельным запросом
         }
     }
+
+    public async Task<AccountProfile?> FindByUsernameAsync(string username)
+    {
+        var user = await userManager.FindByNameAsync(username);
+
+        if (user is null)
+        {
+            return null;
+        }
+        
+        return new AccountProfile(user.Id, user.UserName, user.DisplayName);
+    }
 }

@@ -98,6 +98,26 @@ public sealed class AuthController(
         return Ok(new AccountProfile(user.Id, user.UserName!, user.DisplayName));
     }
 
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(
+        [FromHeader(Name = "X-CSRF-TOKEN"), Required]
+        string csrfToken)
+    {
+        if (!await antiforgery.IsRequestValidAsync(HttpContext)) //проверка токена
+        {
+            return Problem(
+                statusCode: 400,
+                title: "Не прошла проверка CSRF",
+                extensions: new Dictionary<string, object?> { ["code"] = "invalid_csrf_token" }
+            );
+        }
+        
+        await signInManager.SignOutAsync(); //Identity сам удаляет куки входа
+        
+        return NoContent();
+    }
+
     private ObjectResult RegistrationProblem(int status, string code, string title)
     {
         return Problem(statusCode: status, title: title, extensions: new Dictionary<string, object?>{ ["code"] = code});

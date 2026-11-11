@@ -9,6 +9,7 @@ public sealed record RegistrationResult(AccountProfile? User, string? ErrorCode)
 public interface IAccountStore
 {
     Task<RegistrationResult> CreateAsync(string username, string displayName, string password);
+    Task<AccountProfile?> FindByUsernameAsync(string username);
 }
 
 public sealed class RegisterAccount(IAccountStore accounts)
