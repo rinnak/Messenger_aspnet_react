@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Messenger.Web.Hubs;
 
-public sealed class MessageNotifier(
+public sealed class ChatNotifier(
     IHubContext<ChatHub> hub,
     IDirectChatStore chats,
-    ILogger<MessageNotifier> logger)
+    ILogger<ChatNotifier> logger)
 {
     public async Task NotifyMessageCreatedAsync(MessageView message)
     {
@@ -34,6 +34,23 @@ public sealed class MessageNotifier(
         {
             logger.LogError(e, "Не уделось отправить MessageCreated для {MessageId}. Тип ошибки: {ErrorType}",
                 message.Id, e.GetType().Name);
+        }
+    }
+
+    public async Task NotifyChatCreatedAsync(Guid userId, ChatSummary chat)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+
+        try
+        {
+            var recipients = new[] { userId.ToString(), chat.Peer.Id.ToString() };
+            await hub.Clients.Users(recipients)
+                .SendAsync("ChatCreated", new { chatId = chat.Id }, timeout.Token);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning("Не удалось отправить ChatCreated для {ChatId}. Тип ошибки: {ErrorType}",
+                chat.Id, e.GetType().Name);
         }
     }
 }

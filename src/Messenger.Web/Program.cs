@@ -28,7 +28,7 @@ builder.Services.AddIdentityCore<MessengerUser>(options =>
     .AddEntityFrameworkStores<MessengerDbContext>()
     .AddSignInManager();
 builder.Services.AddSignalR();
-builder.Services.AddScoped<MessageNotifier>();
+builder.Services.AddScoped<ChatNotifier>();
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();

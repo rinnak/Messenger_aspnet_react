@@ -16,7 +16,7 @@ public sealed class MessagesController(
     IAntiforgery antiforgery, 
     SendMessage sendMessage, 
     IMessageStore messages,
-    MessageNotifier notifier) : ControllerBase
+    ChatNotifier notifier) : ControllerBase
 {
     public sealed record SendMessageRequest(Guid ClientMessageId, string? Text);
 

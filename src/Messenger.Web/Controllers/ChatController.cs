@@ -4,6 +4,7 @@ using Messenger.Application.Chats;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Messenger.Web.Hubs;
 
 namespace Messenger.Web.Controllers;
 
@@ -11,7 +12,11 @@ namespace Messenger.Web.Controllers;
 [Authorize]
 [Route("api/chats")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class ChatController(IAntiforgery antiforgery, OpenDirectChat openChat, IDirectChatStore chats) : ControllerBase
+public sealed class ChatController(
+    IAntiforgery antiforgery, 
+    OpenDirectChat openChat, 
+    IDirectChatStore chats,
+    ChatNotifier notifier) : ControllerBase
 {
     public sealed record OpenChatRequest(Guid PeerUserId); //данные от клиента
 
@@ -43,6 +48,11 @@ public sealed class ChatController(IAntiforgery antiforgery, OpenDirectChat open
         if (result.Chat is null)
         {
             return ChatProblem(404, "user_not_found", "Собеседник не найден");
+        }
+
+        if (result.Created)
+        {
+            await notifier.NotifyChatCreatedAsync(userId, result.Chat);
         }
         
         return result.Created
