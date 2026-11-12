@@ -53,6 +53,7 @@ builder.Services.AddAntiforgery(options =>
 });
 
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache(); 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

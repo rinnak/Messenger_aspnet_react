@@ -10,6 +10,7 @@ public interface IAccountStore
 {
     Task<RegistrationResult> CreateAsync(string username, string displayName, string password);
     Task<AccountProfile?> FindByUsernameAsync(string username);
+    Task<AccountProfile?> FindProfileByIdAsync(Guid userId, CancellationToken cancellationToken);
 }
 
 public sealed class RegisterAccount(IAccountStore accounts)

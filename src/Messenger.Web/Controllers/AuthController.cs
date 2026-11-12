@@ -14,7 +14,8 @@ public sealed class AuthController(
     IAntiforgery antiforgery,
     RegisterAccount registerAccount,
     UserManager<MessengerUser> userManager,
-    SignInManager<MessengerUser> signInManager) : ControllerBase
+    SignInManager<MessengerUser> signInManager,
+    IAccountStore accounts) : ControllerBase
 {
     [HttpGet("csrf")]
     public IActionResult GetCsrfToken() //Выдача токена гостю
@@ -86,16 +87,15 @@ public sealed class AuthController(
     [Authorize]
     [HttpGet("me")]
     [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)] //запрет кеширования
-    public async Task<IActionResult> GetCurrentAccount()
+    public async Task<IActionResult> GetCurrentAccount(CancellationToken cancellationToken)
     {
-        var user = await userManager.GetUserAsync(User);
-
-        if (user is null)
+        if (!Guid.TryParse(userManager.GetUserId(User), out var userId))
         {
             return Unauthorized();
         }
-        
-        return Ok(new AccountProfile(user.Id, user.UserName!, user.DisplayName));
+
+        var profile = await accounts.FindProfileByIdAsync(userId, cancellationToken);
+        return profile is null ? Unauthorized() : Ok(profile);
     }
 
     [Authorize]

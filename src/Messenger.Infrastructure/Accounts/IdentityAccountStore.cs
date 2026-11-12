@@ -2,10 +2,15 @@ using Messenger.Application.Accounts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Messenger.Infrastructure.Persistence;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Messenger.Infrastructure.Accounts;
 
-public sealed class IdentityAccountStore(UserManager<MessengerUser> userManager) : IAccountStore
+public sealed class IdentityAccountStore(
+    UserManager<MessengerUser> userManager,
+    MessengerDbContext db,
+    IMemoryCache cache) : IAccountStore
 {
     public async Task<RegistrationResult> CreateAsync(string username, string displayName, string password)
     {
@@ -50,5 +55,27 @@ public sealed class IdentityAccountStore(UserManager<MessengerUser> userManager)
         }
         
         return new AccountProfile(user.Id, user.UserName!, user.DisplayName);
+    }
+
+    public async Task<AccountProfile?> FindProfileByIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var cacheKey = (nameof(AccountProfile), userId);
+
+        if (cache.TryGetValue<AccountProfile>(cacheKey, out var cachedProfile) &&
+            cachedProfile is not null)
+        {
+            return cachedProfile;
+        }
+
+        var profile = await db.Users.AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => new AccountProfile(user.Id, user.UserName!, user.DisplayName))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (profile is not null)
+        {
+            cache.Set(cacheKey, profile, TimeSpan.FromMinutes(5));
+        }
+        return profile;
     }
 }
