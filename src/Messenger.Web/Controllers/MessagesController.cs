@@ -4,6 +4,7 @@ using Messenger.Application.Chats;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Messenger.Web.Hubs; 
 
 namespace Messenger.Web.Controllers;
 
@@ -11,7 +12,11 @@ namespace Messenger.Web.Controllers;
 [Authorize]
 [Route("api/chats/{chatId:guid}/messages")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class MessagesController(IAntiforgery antiforgery, SendMessage sendMessage, IMessageStore messages) : ControllerBase
+public sealed class MessagesController(
+    IAntiforgery antiforgery, 
+    SendMessage sendMessage, 
+    IMessageStore messages,
+    MessageNotifier notifier) : ControllerBase
 {
     public sealed record SendMessageRequest(Guid ClientMessageId, string? Text);
 
@@ -35,6 +40,11 @@ public sealed class MessagesController(IAntiforgery antiforgery, SendMessage sen
         
         var result = await sendMessage.SendAsync(chatId, userId, request.ClientMessageId,
             request.Text, cancellationToken);
+
+        if (result.Created && result.Message is { } createdMessage)
+        {
+            await notifier.NotifyMessageCreatedAsync(createdMessage);
+        }
 
         return result.ErrorCode switch
         {

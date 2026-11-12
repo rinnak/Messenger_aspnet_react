@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Messenger.Application.Chats;
 using Messenger.Infrastructure.Chats;
+using Messenger.Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,8 @@ builder.Services.AddIdentityCore<MessengerUser>(options =>
     })
     .AddEntityFrameworkStores<MessengerDbContext>()
     .AddSignInManager();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<MessageNotifier>();
 
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();
@@ -60,10 +63,19 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+app.UseWebSockets(new WebSocketOptions
+{
+    AllowedOrigins = { app.Configuration["SignalR:AllowedOrigin"] ?? "https://localhost:7178" }
+});
 app.UseAuthentication(); //читаем куки входа для опр текущ польз
 app.UseAuthorization(); //может ли опр польз вызв выбр маршрут (если сессия истекла)
 
 app.MapGet("/", () => Results.Ok(new { service = "Messenger" }));
 app.MapControllers();
+
+app.MapHub<ChatHub>("/hubs/chat", options =>
+{
+    options.CloseOnAuthenticationExpiration = true;
+});
 
 app.Run();
