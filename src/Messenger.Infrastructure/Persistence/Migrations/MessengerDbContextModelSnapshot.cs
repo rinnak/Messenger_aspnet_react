@@ -56,6 +56,45 @@ namespace Messenger.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Messenger.Domain.Chats.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChatId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientMessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderId");
+
+                    b.HasIndex("ChatId", "Sequence")
+                        .IsUnique();
+
+                    b.HasIndex("ChatId", "SenderId", "ClientMessageId")
+                        .IsUnique();
+
+                    b.ToTable("Messages", (string)null);
+                });
+
             modelBuilder.Entity("Messenger.Infrastructure.Accounts.MessengerUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -206,6 +245,21 @@ namespace Messenger.Infrastructure.Persistence.Migrations
                     b.HasOne("Messenger.Infrastructure.Accounts.MessengerUser", null)
                         .WithMany()
                         .HasForeignKey("UserBId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Messenger.Domain.Chats.Message", b =>
+                {
+                    b.HasOne("Messenger.Domain.Chats.DirectChat", null)
+                        .WithMany()
+                        .HasForeignKey("ChatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Messenger.Infrastructure.Accounts.MessengerUser", null)
+                        .WithMany()
+                        .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

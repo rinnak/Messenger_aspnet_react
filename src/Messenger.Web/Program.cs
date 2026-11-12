@@ -13,6 +13,8 @@ var connectionString = builder.Configuration.GetConnectionString("Messenger")
 
 builder.Services.AddScoped<IDirectChatStore, DirectChatStore>();
 builder.Services.AddScoped<OpenDirectChat>();
+builder.Services.AddScoped<IMessageStore, MessageStore>();
+builder.Services.AddScoped<SendMessage>();
 builder.Services.AddDbContext<MessengerDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddIdentityCore<MessengerUser>(options =>
     {

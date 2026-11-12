@@ -10,6 +10,7 @@ public sealed class MessengerDbContext(DbContextOptions<MessengerDbContext> opti
     : IdentityUserContext<MessengerUser, Guid>(options)
 {
     public DbSet<DirectChat> DirectChats => Set<DirectChat>();
+    public DbSet<Message> Messages => Set<Message>();
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -31,6 +32,17 @@ public sealed class MessengerDbContext(DbContextOptions<MessengerDbContext> opti
             user.Property(account => account.UserName).IsRequired().HasMaxLength(24);
             user.Property(account => account.NormalizedUserName).IsRequired().HasMaxLength(24);
             user.Property(account => account.DisplayName).IsRequired().HasMaxLength(50);
+        });
+
+        builder.Entity<Message>(message =>
+        {
+            message.ToTable("Messages");
+            message.HasKey(item => item.Id); //серверный UUID - перв ключ
+            message.Property(item => item.Text).HasMaxLength(200).IsRequired();
+            message.HasIndex(item => new { item.ChatId, item.Sequence }).IsUnique();
+            message.HasIndex(item => new { item.ChatId, item.SenderId, item.ClientMessageId }).IsUnique();
+            message.HasOne<DirectChat>().WithMany().HasForeignKey(item => item.ChatId).OnDelete(DeleteBehavior.Restrict);
+            message.HasOne<MessengerUser>().WithMany().HasForeignKey(item => item.SenderId).OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");
