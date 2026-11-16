@@ -1,0 +1,40 @@
+.stage{
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    padding: 1rem;
+    overflow: clip;
+}
+
+.content{
+    position: relative;
+    z-index: 1;
+    width: min(100%, 26rem);
+}
+
+.stage::before{
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(44rem, 150vw);
+    aspect-ratio: 1;
+    pointer-events: none;
+    background:
+            radial-gradient(circle at 25% 30%, rgb(211 132 170 / 52%), transparent 34%),
+            radial-gradient(circle at 78% 69%, rgb(148 104 178 / 43%), transparent 33%);
+    filter: blur(22px);
+    transform: translate(-50%, -50%);
+    animation: orbit 32s linear infinite;
+}
+
+@keyframes orbit {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stage::before { animation: none; }
+}

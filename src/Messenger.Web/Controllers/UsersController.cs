@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using Messenger.Application.Accounts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,22 @@ namespace Messenger.Web.Controllers;
     [Route("api/users")]
     public sealed class UsersController(IAccountStore accounts) : ControllerBase
     {
+        [HttpGet("search")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        public async Task<IActionResult> Search(
+            [FromQuery, Required, StringLength(50)]
+            string query,
+            CancellationToken cancellationToken)
+        {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                return Unauthorized();
+            }
+            var items = await accounts.SearchAsync(query.Trim(), userId, cancellationToken);
+            return Ok(new { items });
+        }
+        
+        
         [HttpGet("lookup")]
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> FindByUsername(

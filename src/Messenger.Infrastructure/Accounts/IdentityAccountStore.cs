@@ -45,6 +45,21 @@ public sealed class IdentityAccountStore(
         }
     }
 
+    public Task<List<AccountProfile>> SearchAsync(string query,
+        Guid currentUserId, CancellationToken cancellationToken)
+    {
+        var escaped = query.Replace("!", "!!").Replace("%", "_%").Replace("_", "!_");
+        var pattern = $"{escaped}";
+        
+        return db.Users.AsNoTracking()
+            .Where(user => user.Id != currentUserId && user.UserName != null)
+            .Where(user => EF.Functions.ILike(user.UserName!, pattern, "!") ||
+                           EF.Functions.ILike(user.DisplayName, pattern, "!"))
+            .OrderBy(user => user.NormalizedUserName)
+            .Select(user => new AccountProfile(user.Id, user.UserName!, user.DisplayName))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<AccountProfile?> FindByUsernameAsync(string username)
     {
         var user = await userManager.FindByNameAsync(username);

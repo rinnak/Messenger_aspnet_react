@@ -1,0 +1,38 @@
+:root {
+    color-scheme: dark;
+
+    --page: #171319;
+    --surface: rgb(41 33 42 / 0.5);
+    --glass: rgb(49 37 49 / 72%);
+    --field: #211b23;
+    --line: rgb(245 214 228 / 18%);
+    --control-line: #8b6e80;
+    --text: #f7eef2;
+    --muted: #c6b4c0;
+    --accent: #e4afc3;
+    --accent-hover: #efc5d5;
+    --on-accent: #331e2a;
+    --danger: #ffb4b5;
+    --avatar: #513746;
+
+    background: var(--page);
+    color: var(--text);
+    font: 1rem/1.5 system-ui, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100dvh;
+    background:
+            radial-gradient(ellipse at 18% 0%, #493042 0%, transparent 48%),
+            var(--page);
+}
+
+button, input { font: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+::selection { color: var(--on-accent); background: var(--accent); }
