@@ -1,0 +1,51 @@
+.form{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.625rem;
+    padding: 0.75rem;
+    border-top: 1px solid var(--line);
+}
+
+.form textarea{
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.75rem;
+    resize: none;
+    border: 1px solid var(--control-line);
+    border-radius: 0.75rem;
+    background: var(--field);
+    color: var(--text);
+    caret-color: var(--accent);
+    font: inherit;
+    outline: none;
+}
+
+
+.form textarea:focus{
+    border-color: var(--accent);
+}
+
+.form button{
+    min-height: 2.75rem;
+    padding-inline: 0.875rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: var(--accent);
+    color: var(--on-accent);
+    cursor: pointer;
+}
+
+.form button:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.form button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.error {
+    grid-column: 1 / -1;
+    color: var(--danger);
+}

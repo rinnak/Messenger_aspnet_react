@@ -1,9 +1,10 @@
 import {AccountProfile, ChatsResponse, ChatSummary} from "../../types";
-import {NavLink, useParams} from "react-router-dom";
+import {NavLink, useParams, useNavigate, parsePath,} from "react-router-dom";
 import {useEffect, useState} from "react";
 import {api, ApiError, getErrorMessage} from "../../api";
 import styles from "./ChatPage.module.css";
-import ConversationPage from "/Users/rinnnaak/vuz/course_backend/src/messenger-client/src/pages/conversation/ConversationPage";
+import ConversationPage from "../conversation/ConversationPage";
+import UserSearchResults from "../user-search/UserSearchResults";
 
 type Props = {
     user: AccountProfile;
@@ -16,7 +17,9 @@ export default function ChatsPage({user, onLogout}: Props) {
     const [error, setError] = useState("");
     const [leaving, setLeaving] = useState(false);
     const [search, setSearch] = useState("");
+    const [openingUserId, setOpeningUserId] = useState<string | null>(null);
 
+    const navigate = useNavigate();
 
     useEffect(() => {
         const request = new AbortController();
@@ -44,10 +47,41 @@ export default function ChatsPage({user, onLogout}: Props) {
         }
     }
 
-    const query = search.trim().replace(/^@/, "").toLocaleLowerCase();
+    async function openChat(peerUserId: string){
+        if (openingUserId !== null) return;
+        setOpeningUserId(peerUserId);
+        setError("");
+
+        try{
+            const chat = await api<ChatSummary>("/api/chats/direct", {
+                method: "POST",
+                body: {peerUserId}
+            });
+
+            setItems((current) => {
+                const chats = current ?? [];
+                return chats.some((item) => item.id === chat.id)
+                    ? chats.map((item) => item.id === chat.id ? chat : item)
+                    : [chat, ...chats];
+            });
+            setSearch("");
+            navigate(`/chats/${chat.id}`);
+        } catch (error) {
+            if (error instanceof ApiError && error.status === 401) onLogout();
+            else setError(getErrorMessage(error));
+        } finally {
+            setOpeningUserId(null);
+        }
+
+    }
+
+    const query = search.trim().replace(/^@/, "").trim();
+    const localQuery = query.toLocaleLowerCase();
     const visible = items?.filter(({ peer }) =>
-        peer.displayName.toLocaleLowerCase().includes(query) ||
-        peer.username.toLocaleLowerCase().includes(query));
+        peer.displayName.toLocaleLowerCase().includes(localQuery) ||
+        peer.username.toLocaleLowerCase().includes(localQuery));
+
+    const chatPreview = items?.find((item) => item.id === chatId) ?? null;
 
     return(
         <main className={styles.workspace} data-open={Boolean(chatId)}>
@@ -64,19 +98,31 @@ export default function ChatsPage({user, onLogout}: Props) {
 
                 <div className={styles.search}>
                     <input type="search"
-                    aria-label="Поиск диалогов"
-                    placeholder="Поиск диалогов"
+                    aria-label="Поиск диалогов и людей"
+                    placeholder="Поиск диалогов и людей"
+                           maxLength={50}
+                           disabled={openingUserId !== null}
                     value={search}
                     onChange={e => setSearch(e.target.value)}/>
                 </div>
 
                 {error && <p className={styles.error} role="alert">{error}</p>}
                 {!items && !error && <p className={styles.status} role="status">Загружаем диалоги...</p>}
-                {visible?.length === 0 && (
-                    <p className={styles.status}>{items?.length ? "Диалоги не найдены" : "Диалогов пока нет"}</p>
-                )}
 
                 <ul className={styles.list}>
+                    {visible?.length === 0 && (
+                        query ? (
+                            <UserSearchResults
+                                key={query}
+                                query={query}
+                                openingUserId={openingUserId}
+                                onOpenChat={openChat}
+                                onSessionExpired={onLogout}
+                            />
+                        ) : (
+                            <li className={styles.status}>Диалогов пока нет</li>
+                        )
+                    )}
                     {visible?.map(chat => (
                         <li key={chat.id}>
                             <NavLink className={styles.chatRow} to={`/chats/${chat.id}`} end>
@@ -94,7 +140,17 @@ export default function ChatsPage({user, onLogout}: Props) {
             </aside>
             <div className={styles.detail}>
                 {chatId ? (
-                    <ConversationPage key={chatId} chatId={chatId} userId={user.id} onSessionExpired={onLogout}/>
+                    items === null && !error ? (
+                        <p role="status">Загружаем переписку...</p>
+                    ) : (
+                        <ConversationPage
+                            key={chatId}
+                            chatId={chatId}
+                            chatPreview={chatPreview}
+                            userId={user.id}
+                            onSessionExpired={onLogout}
+                        />
+                    )
                 ) : (
                     <p className={styles.empty}>Выбери диалог, чтобы открыть переписку</p>
                 )}

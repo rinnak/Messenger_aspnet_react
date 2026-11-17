@@ -15,7 +15,7 @@ namespace Messenger.Web.Controllers;
         [HttpGet("search")]
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> Search(
-            [FromQuery, Required, StringLength(50)]
+            [FromQuery(Name = "q"), Required, StringLength(50)]
             string query,
             CancellationToken cancellationToken)
         {

@@ -27,9 +27,10 @@
 }
 
 body {
-    min-height: 100dvh;
+    min-height: 100dvh; /* Фон закрывает всю видимую высоту окна. */
     background:
-            radial-gradient(ellipse at 18% 0%, #493042 0%, transparent 48%),
+            radial-gradient(ellipse at 21% 8%, #543447, transparent 46%),
+            radial-gradient(ellipse at 88% 84%, #362640, transparent 42%),
             var(--page);
 }
 

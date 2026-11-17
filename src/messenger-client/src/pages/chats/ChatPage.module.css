@@ -3,7 +3,6 @@
     grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
     grid-template-rows: min(52rem, 100%);
     align-content: center;
-    align-items: stretch;
     gap: 1rem;
     width: 100%;
     height: 100dvh;
@@ -14,6 +13,7 @@
 }
 
 .sidebar {
+    composes: glass from "../../LiquidGlass.module.css";
     display: flex;
     height: 100%;
     flex-direction: column;
@@ -21,11 +21,10 @@
     min-width: 0;
     border-radius: 1.5rem;
     backdrop-filter: blur(1px);
-    background: var(--surface);
-    border: 1px solid var(--line);
 }
 
 .sidebarHeader{
+    align-items: center;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -40,16 +39,18 @@
 }
 
 .sidebarHeader button{
-    padding: .4rem .75rem;
+    padding: .5rem .75rem;
     border: 1px solid var(--line);
     border-radius: 0.65rem;
     background-color: var(--field);
     color: var(--text);
     cursor: pointer;
 }
-
+.sidebarHeader .search {
+    flex-shrink: 0;
+}
 .search{
-    padding: 0 1rem .85rem;
+    padding: 0 1rem .75rem;
 }
 .search input {
     width: 100%;
@@ -57,7 +58,7 @@
     padding: .5rem .85rem;
     border: 1px solid var(--control-line);
     border-radius: 0.9rem;
-    background: rgb(29 22 31 / 76%);
+    background: var(--field);
     color: var(--text);
 }
 
@@ -67,16 +68,95 @@
 
 .search input:focus{
     outline: none;
-    border-color: var(--accent);.form input:focus{
-    outline: none;
     border-color: var(--accent);
-    background: #2b202b;
-    box-shadow: 0 0 0 3px rgb(228 175 195 / 16%);
-}
 }
 .list{
+    flex: 1;
     list-style: none;
     overflow: auto;
     min-height: 0;
     padding: .15rem .5rem;
+}
+
+.chatRow{
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: .75rem;
+    color: var(--text);
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+}
+
+.chatRow:hover{
+    background-color: rgb(228 175 192 /8%);
+}
+
+.chatRow[aria-current="page"]{
+    background: rgb(228 175 195 / 16%);
+}
+
+.avatar{
+    display: grid;
+    place-items: center;
+    flex: 0 0 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: var(--avatar);
+    color: var(--accent);
+}
+
+.name{
+    display: grid;
+    min-width: 0;
+}
+
+.name :is(strong, small, p){
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.name :is(small, p),
+.status,
+.empty {
+    color: var(--muted);
+}
+
+.status,
+.error {
+    padding: 0.5rem 1rem;
+}
+
+.error {
+    color: var(--danger);
+}
+
+.detail {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    min-width: 0;
+}
+.empty{
+    place-self: center;
+    padding-inline: 1rem;
+    text-align: center;
+}
+
+@media (max-width: 760px){
+    .workspace{
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        padding: 0.25rem;
+    }
+
+    .workspace[data-open="false"] .detail,
+    .workspace[data-open="true"] .sidebar {
+        display: none;
+    }
+
+
 }

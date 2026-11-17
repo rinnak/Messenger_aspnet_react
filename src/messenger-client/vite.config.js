@@ -30,6 +30,12 @@ export default defineConfig(({ command }) => {
                     target: "https://localhost:7178",
                     changeOrigin: true,
                     agent: new Agent({ca: cert}),
+                },
+                "/hubs": {
+                    target: "https://localhost:7178",
+                    changeOrigin: true,
+                    ws: true,
+                    agent: new Agent({ca: cert}),
                 }
             }
         }

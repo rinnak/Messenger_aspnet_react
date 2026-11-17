@@ -64,10 +64,22 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
-app.UseWebSockets(new WebSocketOptions
+
+var webSocketOptions = new WebSocketOptions
 {
-    AllowedOrigins = { app.Configuration["SignalR:AllowedOrigin"] ?? "https://localhost:7178" }
-});
+    AllowedOrigins =
+    {
+        app.Configuration["SignalR:AllowedOrigin"] ??
+        "https://localhost:7178"
+    }
+};
+
+if (app.Environment.IsDevelopment())
+{
+    webSocketOptions.AllowedOrigins.Add("https://localhost:5173");
+}
+
+app.UseWebSockets(webSocketOptions);
 app.UseAuthentication(); //читаем куки входа для опр текущ польз
 app.UseAuthorization(); //может ли опр польз вызв выбр маршрут (если сессия истекла)
 
