@@ -5,6 +5,7 @@ import {ChatMessage, ChatSummary, HistoryResponse} from "../../types";
 import {api, ApiError, getErrorMessage} from "../../api";
 import MessageComposer from "../../features/message-composer/MessageComposer";
 import { HubConnectionBuilder } from "@microsoft/signalr";
+import {formatTime} from "../../fotmatTime";
 
 type Props = {
     chatId: string;
@@ -237,7 +238,19 @@ export default function ConversationPage({chatId, userId, chatPreview, onSession
     return (
         <section className={styles.conversation} aria-label="Переписка">
             <header className={styles.header}>
-                <Link to="/chats" className={styles.back}>←</Link>
+                <Link to="/chats" className={styles.back}>
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M19 12H5m7-7-7 7 7 7" />
+                    </svg>
+                </Link>
                 {chat && <span className={styles.avatar}>{chat.peer.displayName[0]}</span>}
                 <div className={styles.name}>
                     <h2>{chat?.peer.displayName ?? "Переписка"}</h2>
@@ -260,7 +273,10 @@ export default function ConversationPage({chatId, userId, chatPreview, onSession
                             className={styles.message}
                             data-own={message.senderId === userId}
                         >
-                            {message.text}
+                            <span className={styles.messageText}>{message.text}</span>
+                            <time className={styles.messageTime} dateTime={message.createdAt}>
+                                {formatTime(message.createdAt)}
+                            </time>
                         </div>
                     ))}
                 </div>

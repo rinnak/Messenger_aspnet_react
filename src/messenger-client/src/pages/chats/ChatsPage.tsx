@@ -5,6 +5,7 @@ import {api, ApiError, getErrorMessage} from "../../api";
 import styles from "./ChatPage.module.css";
 import ConversationPage from "../conversation/ConversationPage";
 import UserSearchResults from "../user-search/UserSearchResults";
+import {formatTime} from "../../fotmatTime";
 
 type Props = {
     user: AccountProfile;
@@ -13,16 +14,17 @@ type Props = {
 
 export default function ChatsPage({user, onLogout}: Props) {
     const {chatId} = useParams();
+    const navigate = useNavigate();
+
     const [items, setItems] = useState<ChatSummary[] | null>(null);
     const [error, setError] = useState("");
     const [leaving, setLeaving] = useState(false);
     const [search, setSearch] = useState("");
     const [openingUserId, setOpeningUserId] = useState<string | null>(null);
 
-    const navigate = useNavigate();
-
     useEffect(() => {
         const request = new AbortController();
+
         api<ChatsResponse>("/api/chats", {signal: request.signal})
             .then(data => setItems(data.items))
             .catch((error: unknown) => {
@@ -30,12 +32,14 @@ export default function ChatsPage({user, onLogout}: Props) {
                 if (error instanceof ApiError && error.status === 401) onLogout();
                 else setError(getErrorMessage(error))
             });
+
         return () => request.abort();
     }, [onLogout]);
 
     async function logout(){
         setLeaving(true);
         setError("");
+
         try{
             await api<null>("/api/auth/logout", {method: "POST"});
             onLogout();
@@ -49,6 +53,7 @@ export default function ChatsPage({user, onLogout}: Props) {
 
     async function openChat(peerUserId: string){
         if (openingUserId !== null) return;
+
         setOpeningUserId(peerUserId);
         setError("");
 
@@ -64,6 +69,7 @@ export default function ChatsPage({user, onLogout}: Props) {
                     ? chats.map((item) => item.id === chat.id ? chat : item)
                     : [chat, ...chats];
             });
+
             setSearch("");
             navigate(`/chats/${chat.id}`);
         } catch (error) {
@@ -72,7 +78,6 @@ export default function ChatsPage({user, onLogout}: Props) {
         } finally {
             setOpeningUserId(null);
         }
-
     }
 
     const query = search.trim().replace(/^@/, "").trim();
@@ -80,23 +85,55 @@ export default function ChatsPage({user, onLogout}: Props) {
     const visible = items?.filter(({ peer }) =>
         peer.displayName.toLocaleLowerCase().includes(localQuery) ||
         peer.username.toLocaleLowerCase().includes(localQuery));
-
     const chatPreview = items?.find((item) => item.id === chatId) ?? null;
 
     return(
         <main className={styles.workspace} data-open={Boolean(chatId)}>
+            <aside className={styles.rail}>
+                <span className={styles.accountAvatar}
+                      title={`@${user.username}`}
+                      aria-hidden="true">
+                    {Array.from(user.displayName.trim())[0]?.toLocaleUpperCase() ?? "?"}
+                </span>
+                <div className={styles.railActions}>
+                    <button
+                        className={styles.logout}
+                        type="button"
+                        onClick={logout}
+                        disabled={leaving}
+                        aria-label={leaving ? "Выходим..." : "Выйти из аккаунта"}
+                        title="Выйти из аккаунта"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            aria-hidden="true"
+                        ><path d="M12 3v9M7 6a8 8 0 1 0 10 0" />
+                        </svg>
+                    </button>
+                </div>
+            </aside>
             <aside className={styles.sidebar} aria-label="Список диалогов">
                 <header className={styles.sidebarHeader}>
                     <div className={styles.name}>
                         <h1>Диалоги</h1>
-                        <p>@{user.username}</p>
                     </div>
-                    <button type="button" onClick={logout} disabled={leaving}>
-                        {leaving ? "Выходим..." : "Выйти"}
-                    </button>
                 </header>
-
                 <div className={styles.search}>
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                    >
+                        <circle cx="10.75" cy="10.75" r="6.5" />
+                        <path d="m16 16 4 4" />
+                    </svg>
                     <input type="search"
                     aria-label="Поиск диалогов и людей"
                     placeholder="Поиск диалогов и людей"
@@ -133,6 +170,11 @@ export default function ChatsPage({user, onLogout}: Props) {
                                     <strong>{chat.peer.displayName}</strong>
                                     <small>@{chat.peer.username}</small>
                                 </span>
+                                {chat.lastMessageAt && (
+                                    <time className={styles.rowTime} dateTime={chat.lastMessageAt}>
+                                        {formatTime(chat.lastMessageAt)}
+                                    </time>
+                                )}
                             </NavLink>
                         </li>
                     ))}
@@ -156,5 +198,5 @@ export default function ChatsPage({user, onLogout}: Props) {
                 )}
             </div>
         </main>
-    )
+    );
 }

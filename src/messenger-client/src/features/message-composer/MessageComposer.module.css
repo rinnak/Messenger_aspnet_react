@@ -1,4 +1,7 @@
 .form{
+    background-color: var(--chat-toolbar);
+    border-end-start-radius: inherit;
+    border-end-end-radius: inherit;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: end;
@@ -12,7 +15,7 @@
     min-height: 2.75rem;
     padding: 0.625rem 0.75rem;
     resize: none;
-    border: 1px solid var(--control-line);
+    border: 1px solid transparent;
     border-radius: 0.75rem;
     background: var(--field);
     color: var(--text);
@@ -21,27 +24,39 @@
     outline: none;
 }
 
+.form textarea::placeholder {
+    color: var(--muted);
+}
 
 .form textarea:focus{
-    border-color: var(--accent);
+    border-color: var(--line);
 }
 
 .form button{
-    min-height: 2.75rem;
-    padding-inline: 0.875rem;
+    display: grid;
+    height: 2.75rem;
+    width: 2.75rem;
+    place-items: center;
     border: 0;
     border-radius: 0.75rem;
-    background: var(--accent);
-    color: var(--on-accent);
+    background: transparent;
+    color: var(--accent);
     cursor: pointer;
 }
 
+
+.form button svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
 .form button:hover:not(:disabled) {
-    background: var(--accent-hover);
+    background: var(--row-hover);
+    color: var(--accent-hover);
 }
 
 .form button:disabled {
-    opacity: 0.5;
+    opacity: 0.55;
     cursor: default;
 }
 
