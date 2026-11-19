@@ -168,6 +168,7 @@
 }
 
 .chatRow{
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 0.85rem;
@@ -178,7 +179,12 @@
     text-decoration: none;
 }
 
-
+button.chatRow {
+    border: 0;
+    background: transparent;
+    text-align: start;
+    cursor: pointer;
+}
 
 .chatRow:hover:not(:disabled) {
     background: var(--row-hover);

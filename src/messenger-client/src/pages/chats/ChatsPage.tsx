@@ -1,11 +1,12 @@
 import {AccountProfile, ChatsResponse, ChatSummary} from "../../types";
-import {NavLink, useParams, useNavigate, parsePath,} from "react-router-dom";
+import {NavLink, useParams, useNavigate} from "react-router-dom";
 import {useEffect, useState} from "react";
 import {api, ApiError, getErrorMessage} from "../../api";
 import styles from "./ChatPage.module.css";
 import ConversationPage from "../conversation/ConversationPage";
 import UserSearchResults from "../user-search/UserSearchResults";
 import {formatTime} from "../../fotmatTime";
+import {HubConnectionBuilder, type HubConnection} from "@microsoft/signalr";
 
 type Props = {
     user: AccountProfile;
@@ -16,6 +17,8 @@ export default function ChatsPage({user, onLogout}: Props) {
     const {chatId} = useParams();
     const navigate = useNavigate();
 
+    const [liveConnection, setLiveConnection] = useState<{hub: HubConnection} | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState("");
     const [items, setItems] = useState<ChatSummary[] | null>(null);
     const [error, setError] = useState("");
     const [leaving, setLeaving] = useState(false);
@@ -23,17 +26,67 @@ export default function ChatsPage({user, onLogout}: Props) {
     const [openingUserId, setOpeningUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        const request = new AbortController();
+        let stopped = false;
+        let listRequest: AbortController | undefined;
 
-        api<ChatsResponse>("/api/chats", {signal: request.signal})
-            .then(data => setItems(data.items))
-            .catch((error: unknown) => {
-                if (request.signal.aborted) return;
-                if (error instanceof ApiError && error.status === 401) onLogout();
-                else setError(getErrorMessage(error))
-            });
+        const hub = new HubConnectionBuilder()
+            .withUrl("/hubs/chat") //серверный хаб
+            .withAutomaticReconnect() //восстановление соединения после обрыва
+            .build();
 
-        return () => request.abort();
+        function refreshChats(){
+            if (stopped) return;
+            listRequest?.abort(); //при новом событии отменяем предыдущий запрос списка
+
+            const request = new AbortController();
+            listRequest = request;
+
+            void api<ChatsResponse>("/api/chats", {signal: request.signal})
+                .then(({items}) => {
+                    if (request.signal.aborted) return;
+                    setItems(items);
+                    setError("");
+                })
+                .catch((error: unknown) => {
+                    if (request.signal.aborted) return;
+                    if (error instanceof ApiError && error.status === 401) onLogout();
+                    else setError(getErrorMessage(error));
+                });
+        }
+
+        function handleConnected(){
+            if (stopped) return;
+            setLiveConnection({hub});
+            setConnectionStatus("");
+            refreshChats();
+        }
+
+        hub.on("ChatCreated", refreshChats);
+        hub.on("MessageCreated", refreshChats);
+        hub.onreconnected(handleConnected);
+
+        hub.onreconnecting(() => {
+            if (stopped) return;
+            setLiveConnection(null);
+            setConnectionStatus("Восстанавливаем соединение...");
+        });
+
+        hub.onclose(() => {
+            if (stopped) return;
+            setLiveConnection(null);
+            setConnectionStatus("Соединение потеряно");
+        });
+
+        refreshChats();
+        void hub.start().then(handleConnected).catch(() => {
+            if (!stopped) setConnectionStatus("Не удалось подключить обновление чатов")
+        });
+
+        return () => {
+            stopped = true;
+            listRequest?.abort();
+            void hub.stop();
+        }
     }, [onLogout]);
 
     async function logout(){
@@ -144,6 +197,9 @@ export default function ChatsPage({user, onLogout}: Props) {
                 </div>
 
                 {error && <p className={styles.error} role="alert">{error}</p>}
+                {connectionStatus && !chatId && (
+                    <p className={styles.status} role="status">{connectionStatus}</p>
+                )}
                 {!items && !error && <p className={styles.status} role="status">Загружаем диалоги...</p>}
 
                 <ul className={styles.list}>
@@ -186,6 +242,8 @@ export default function ChatsPage({user, onLogout}: Props) {
                         <p role="status">Загружаем переписку...</p>
                     ) : (
                         <ConversationPage
+                            liveConnection={liveConnection}
+                            connectionStatus={connectionStatus}
                             key={chatId}
                             chatId={chatId}
                             chatPreview={chatPreview}

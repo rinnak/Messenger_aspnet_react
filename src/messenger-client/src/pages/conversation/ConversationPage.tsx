@@ -6,15 +6,18 @@ import {api, ApiError, getErrorMessage} from "../../api";
 import MessageComposer from "../../features/message-composer/MessageComposer";
 import { HubConnectionBuilder } from "@microsoft/signalr";
 import {formatTime} from "../../fotmatTime";
+import type { HubConnection } from "@microsoft/signalr";
 
 type Props = {
+    liveConnection: { hub: HubConnection } | null;
+    connectionStatus: string;
     chatId: string;
     userId: string;
     chatPreview: ChatSummary | null;
     onSessionExpired: () => void;
 };
 
-export default function ConversationPage({chatId, userId, chatPreview, onSessionExpired}: Props){
+export default function ConversationPage({liveConnection, connectionStatus, chatId, userId, chatPreview, onSessionExpired}: Props){
 
     const [loadedChat, setLoadedChat] = useState<ChatSummary | null>(null);
     const [loadingHistory, setLoadingHistory] = useState(true);
@@ -161,13 +164,10 @@ export default function ConversationPage({chatId, userId, chatPreview, onSession
     const chatReady = chat !== null && !loadingHistory && !error;
 
     useEffect(() => {
-        if (!chatReady) return;
+        if (!chatReady || !liveConnection) return;
 
+        const connection = liveConnection.hub;
         const requests = new AbortController();
-        const connection = new HubConnectionBuilder()
-            .withUrl("/hubs/chat")
-            .withAutomaticReconnect()
-            .build();
 
         //доугрузка сообщений
         async function catchUp(){
@@ -201,7 +201,7 @@ export default function ConversationPage({chatId, userId, chatPreview, onSession
             }
         }
 
-        connection.on("MessageCreated", (message: ChatMessage) => {
+        function handleMessageCreated(message: ChatMessage) {
             if (requests.signal.aborted || message.chatId !== chatId) return;
 
             if (message.sequence === confirmedSequence.current + 1){
@@ -209,29 +209,16 @@ export default function ConversationPage({chatId, userId, chatPreview, onSession
             }
 
             mergeMessages([message]);
-        });
+        }
 
-        connection.onreconnecting(() => {
-            if (!requests.signal.aborted) setLiveStatus("Восстанавливаем соединение...");
-        });
-
-        connection.onreconnected(() => void catchUp());
-
-        connection.onclose(() => {
-            if (!requests.signal.aborted) setLiveStatus("Соединение потеряно, открой диалог заново");
-        });
-
-        void connection.start()
-            .then(catchUp)
-            .catch(() => {
-                if (!requests.signal.aborted) setLiveStatus("Не удалось подключиться к чату");
-            });
+        connection.on("MessageCreated", handleMessageCreated);
+        void catchUp();
 
         return () => {
             requests.abort();
-            void connection.stop();
-        };
-    }, [chatReady, chatId, messagesUrl, mergeMessages, onSessionExpired]);
+            connection.off("MessageCreated", handleMessageCreated);
+        }
+    }, [chatReady, chatId, messagesUrl, mergeMessages, onSessionExpired, liveConnection]);
 
 
 

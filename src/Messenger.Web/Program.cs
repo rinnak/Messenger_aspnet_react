@@ -9,6 +9,9 @@ using Messenger.Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var localDocker = builder.Environment.IsEnvironment("LocalDocker");
+var cookiePolicy = localDocker ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+
 var connectionString = builder.Configuration.GetConnectionString("Messenger")
     ?? throw new InvalidOperationException("Configure ConnectionStrings:Messenger for PostgreSQL.");
 
@@ -35,9 +38,9 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "Messenger.Auth";
+    options.Cookie.Name = localDocker ? "Messenger.LocalDocker.Auth" : "Messenger.Auth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = cookiePolicy;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = false;
@@ -49,21 +52,38 @@ builder.Services.AddControllers();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = cookiePolicy;
+    if (localDocker)
+    {
+        options.Cookie.Name = "Messenger.LocalDocker.Csrf";
+    }
 });
 
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache(); 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+if (localDocker)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<MessengerDbContext>();
+    await db.Database.MigrateAsync();
+}
+
+if (app.Environment.IsDevelopment() || localDocker)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-
-app.UseHttpsRedirection();
+if (localDocker)
+{
+    app.UseStaticFiles();
+}
+else
+{
+    app.UseHttpsRedirection();
+}
 
 var webSocketOptions = new WebSocketOptions
 {
@@ -83,7 +103,7 @@ app.UseWebSockets(webSocketOptions);
 app.UseAuthentication(); //читаем куки входа для опр текущ польз
 app.UseAuthorization(); //может ли опр польз вызв выбр маршрут (если сессия истекла)
 
-app.MapGet("/", () => Results.Ok(new { service = "Messenger" }));
+app.MapGet("/health", () => Results.Ok(new { service = "Messenger" }));
 app.MapControllers();
 
 app.MapHub<ChatHub>("/hubs/chat", options =>
@@ -91,4 +111,17 @@ app.MapHub<ChatHub>("/hubs/chat", options =>
     options.CloseOnAuthenticationExpiration = true;
 });
 
+if (localDocker)
+{
+    const string indexFile = "client/index.html";
+    app.MapFallbackToFile("/", indexFile);
+    app.MapFallbackToFile("/login", indexFile);
+    app.MapFallbackToFile("/register", indexFile);
+    app.MapFallbackToFile("/chats", indexFile);
+    app.MapFallbackToFile("/chats/{chatId:guid}", indexFile);
+}
+else
+{
+    app.MapGet("/", () => Results.Ok(new { service = "Messenger" }));
+}
 app.Run();

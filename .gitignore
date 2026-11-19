@@ -3,6 +3,11 @@ obj/
 .idea/
 *.sln.DotSettings.user
 .local/
+.agents/
 .DS_Store
+skills-lock.json
 
+node_modules/
+/src/messenger-client/dist/
+/src/Messenger.Web/wwwroot/client/
 /src/Messenger.Web/appsettings.Development.json
