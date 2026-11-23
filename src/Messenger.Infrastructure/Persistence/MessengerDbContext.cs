@@ -38,7 +38,7 @@ public sealed class MessengerDbContext(DbContextOptions<MessengerDbContext> opti
         {
             message.ToTable("Messages");
             message.HasKey(item => item.Id); //серверный UUID - перв ключ
-            message.Property(item => item.Text).HasMaxLength(200).IsRequired();
+            message.Property(item => item.Text).HasMaxLength(2000).IsRequired();
             message.HasIndex(item => new { item.ChatId, item.Sequence }).IsUnique();
             message.HasIndex(item => new { item.ChatId, item.SenderId, item.ClientMessageId }).IsUnique();
             message.HasOne<DirectChat>().WithMany().HasForeignKey(item => item.ChatId).OnDelete(DeleteBehavior.Restrict);
